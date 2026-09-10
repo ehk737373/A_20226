@@ -236,33 +236,32 @@ with st.container():
 
 st.divider()
 
-# 구역 6: 캘린더 히트맵 (월 x 요일 관객수 집계)
+# 구역 6: 캘린더 히트맵 (월 x 요일 관객수 집계) - px.imshow 활용으로 오류 해결
 with st.container():
     st.subheader("6. 월별/요일별 캘린더 관객수 히트맵")
 
-    # 1. daily_total 데이터프레임에 월, 요일 이름, 날짜(문자열) 컬럼 생성
+    # 1. 데이터에 월, 요일, 날짜 문자열 컬럼 추가
     daily_heatmap = daily_total.copy()
     daily_heatmap["월"] = daily_heatmap["기준일자"].dt.strftime("%Y-%m")
-    
-    # 요일 이름을 월요일~일요일 순서로 정렬하기 위한 카테고리 설정
+
+    # 요일 영문 -> 한글 매핑 및 순서 지정
     day_names = ["월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"]
-    daily_heatmap["요일"] = daily_heatmap["기준일자"].dt.day_name().map({
+    day_map = {
         "Monday": "월요일", "Tuesday": "화요일", "Wednesday": "수요일",
         "Thursday": "목요일", "Friday": "금요일", "Saturday": "토요일", "Sunday": "일요일"
-    })
-    
-    # yyyy-mm-dd 날짜 문자열 컬럼 생성 (마우스 호버용)
+    }
+    daily_heatmap["요일"] = daily_heatmap["기준일자"].dt.day_name().map(day_map)
     daily_heatmap["날짜문자열"] = daily_heatmap["기준일자"].dt.strftime("%Y-%m-%d")
 
-    # 2. 월 x 요일 기준 피벗 테이블 생성 (값: 해당일관객수)
+    # 2. 관객수 집계 피벗 테이블 생성
     heatmap_pivot = daily_heatmap.pivot_table(
         index="요일", 
         columns="월", 
         values="해당일관객수", 
         aggfunc="sum"
-    ).reindex(day_names)  # 요일 순서를 월~일로 정렬
+    ).reindex(day_names)
 
-    # 3. 호버 시 보여줄 yyyy-mm-dd 날짜 목록 피벗 테이블 생성 (문자열 결합)
+    # 3. 호버 표기용 날짜 피벗 테이블 생성
     date_pivot = daily_heatmap.pivot_table(
         index="요일", 
         columns="월", 
@@ -270,28 +269,29 @@ with st.container():
         aggfunc=lambda x: ", ".join(x)
     ).reindex(day_names)
 
-    # 4. Plotly 히트맵(go.Heatmap) 생성
-    fig6 = go.Figure(
-        data=go.Heatmap(
-            z=heatmap_pivot.values,
-            x=heatmap_pivot.columns,
-            y=heatmap_pivot.index,
-            customdata=date_pivot.values,
-            colorscale="YlOrRd",  # 색상이 진할수록 관객 수가 많은 색상표
-            hovertemplate=(
-                "<b>날짜:</b> %{customdata}<br>" +
-                "<b>월/요일:</b> %{x} (%{y})<br>" +
-                "<b>총 관객수:</b> %{z:,.0f}명<extra></extra>"
-            )
+    # 4. px.imshow 함수를 사용하여 안정적인 히트맵 생성
+    fig6 = px.imshow(
+        heatmap_pivot,
+        labels=dict(x="연-월", y="요일", color="총 관객수(명)"),
+        x=heatmap_pivot.columns,
+        y=heatmap_pivot.index,
+        color_continuous_scale="YlOrRd",
+        aspect="auto"
+    )
+
+    # 호버 템플릿 커스텀 적용 (날짜 문자열 표시)
+    fig6.update_traces(
+        customdata=date_pivot.values,
+        hovertemplate=(
+            "<b>날짜:</b> %{customdata}<br>" +
+            "<b>연-월:</b> %{x}<br>" +
+            "<b>요일:</b> %{y}<br>" +
+            "<b>총 관객수:</b> %{z:,.0f}명<extra></extra>"
         )
     )
 
-    # 레이아웃 설정
     fig6.update_layout(
         title="월별/요일별 박스오피스 관객수 분포 (진할수록 관객 많음)",
-        xaxis_title="연-월",
-        yaxis_title="요일",
-        yaxis=dict(autorange="reverse")  # 월요일이 상단에 오도록 순서 반전
     )
 
     st.plotly_chart(fig6, use_container_width=True)
