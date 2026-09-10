@@ -53,7 +53,6 @@ filtered_df = df[df["영화명"] == selected_movie]
 
 
 # [5. 기타 - 구역 나누기]
-# 앞으로 추가될 시각화 섹션을 위해 구역을 나눕니다.
 st.header(f"📊 '{selected_movie}' 데이터 시각화")
 
 # 구역 1: 해당일관객수 추이 선그래프
@@ -81,10 +80,26 @@ with st.container():
 
 st.divider()  # 구역 구분을 위한 줄 바꿈
 
-# 구역 2: 추후 추가될 그래프를 위한 공간
+# 구역 2: 누적관객수 영역 차트 (Area Chart)
 with st.container():
-    st.subheader("2. 추가 시각화 영역 (예정)")
-    st.info("이곳에 추가적인 분석 그래프가 들어갈 예정입니다.")
+    st.subheader("2. 누적 관객수 증가 추이")
 
-    # 추후 추가될 그래프 설명 문구 자리 예시
-    st.caption("💡 **이 그래프로 알 수 있는 것:** (추가 예정)")
+    # Plotly를 사용하여 기준일자별 누적관객수 영역 차트 생성
+    fig2 = px.area(
+        filtered_df,
+        x="기준일자",
+        y="누적관객수",
+        title=f"'{selected_movie}'의 누적 관객수 변화",
+        labels={"기준일자": "날짜", "누적관객수": "누적 관객수(명)"},
+    )
+
+    # 영역차트 디자인 커스텀 (선 색상 및 면적 채우기 강조)
+    fig2.update_traces(line_color="#2E86C1", fillcolor="rgba(46, 134, 193, 0.3)")
+
+    # 그래프 출력
+    st.plotly_chart(fig2, use_container_width=True)
+
+    # 그래프 설명 문구 자리
+    st.caption(
+        "💡 **이 그래프로 알 수 있는 것:** 시간이 지남에 따라 전체 총 관객수가 얼마나 빠르게 누적되고 완만해지는지 전체적인 성과 규모를 파악할 수 있습니다."
+    )
