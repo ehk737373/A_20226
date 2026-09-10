@@ -162,7 +162,7 @@ with st.container():
     # 3. Plotly graph_objects를 사용하여 두 개의 선을 하나의 그래프에 중첩 표현
     fig4 = go.Figure()
 
-    # (1) 원본 데이터 선: 연한 색상, 얇은 두께로 지정하여 요일별 변동 폭을 시각화
+    # (1) 원본 데이터 선
     fig4.add_trace(
         go.Scatter(
             x=daily_total["기준일자"],
@@ -173,7 +173,7 @@ with st.container():
         )
     )
 
-    # (2) 7일 이동평균 선: 진한 색상, 두꺼운 선으로 지정하여 추세를 강조
+    # (2) 7일 이동평균 선
     fig4.add_trace(
         go.Scatter(
             x=daily_total["기준일자"],
@@ -184,7 +184,6 @@ with st.container():
         )
     )
 
-    # 레이아웃 및 축 설정
     fig4.update_layout(
         title="전체 박스오피스 총 관객수 변화 (일일 변동 vs 7일 이동평균)",
         xaxis_title="날짜",
@@ -192,10 +191,48 @@ with st.container():
         hovermode="x unified",
     )
 
-    # 그래프 출력
     st.plotly_chart(fig4, use_container_width=True)
+
+    st.caption(
+        "💡 **이 그래프로 알 수 있는 것:** 주말과 평일 간의 극심한 일별 관객수 변동(연한 선)을 노이즈 없이 다듬어, 전체 영화 시장의 시즌별 성수기/비수기 관객 흐름 추세(진한 빨간 선)를 명확히 파악할 수 있습니다."
+    )
+
+st.divider()
+
+# 구역 5: 월별 전체 관객수 합계 막대그래프
+with st.container():
+    st.subheader("5. 월별 전체 관객수 합계")
+
+    # 1. '기준일자'에서 '연-월(YYYY-MM)' 형태의 문자열 추출하여 컬럼 생성
+    daily_total["연월"] = daily_total["기준일자"].dt.strftime("%Y-%m")
+
+    # 2. 연-월 단위로 그룹화하여 일별 관객수 합계를 월 단위로 재합산
+    monthly_total = (
+        daily_total.groupby("연월")["해당일관객수"].sum().reset_index()
+    )
+
+    # 3. Plotly 막대그래프(Bar Chart) 생성
+    fig5 = px.bar(
+        monthly_total,
+        x="연월",
+        y="해당일관객수",
+        title="월별 극장가 총 관객수 집계",
+        labels={"연월": "년-월", "해당일관객수": "월 총 관객수(명)"},
+        text_auto=".2s",  # 막대 위에 축약된 수치 표시 (예: 1.5M, 500k 등)
+    )
+
+    # 막대 색상 및 디자인 설정
+    fig5.update_traces(
+        marker_color="#3498DB",
+        textposition="outside",  # 수치를 막대 상단 외부에 표시
+    )
+
+    fig5.update_layout(xaxis_type="category")  # x축을 연-월 카테고리로 명확하게 표시
+
+    # 그래프 출력
+    st.plotly_chart(fig5, use_container_width=True)
 
     # 그래프 설명 문구 자리
     st.caption(
-        "💡 **이 그래프로 알 수 있는 것:** 주말과 평일 간의 극심한 일별 관객수 변동(연한 선)을 노이즈 없이 다듬어, 전체 영화 시장의 시즌별 성수기/비수기 관객 흐름 추세(진한 빨간 선)를 명확히 파악할 수 있습니다."
+        "💡 **이 그래프로 알 수 있는 것:** 월 단위 총 관객수를 비교하여 연중 어떤 달(여름 방학/추석/겨울 방학 등)이 극장가의 가장 큰 성수기인지 한눈에 파악할 수 있습니다."
     )
