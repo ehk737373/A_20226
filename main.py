@@ -218,21 +218,85 @@ with st.container():
         y="해당일관객수",
         title="월별 극장가 총 관객수 집계",
         labels={"연월": "년-월", "해당일관객수": "월 총 관객수(명)"},
-        text_auto=".2s",  # 막대 위에 축약된 수치 표시 (예: 1.5M, 500k 등)
+        text_auto=".2s",
     )
 
-    # 막대 색상 및 디자인 설정
     fig5.update_traces(
         marker_color="#3498DB",
-        textposition="outside",  # 수치를 막대 상단 외부에 표시
+        textposition="outside",
     )
 
-    fig5.update_layout(xaxis_type="category")  # x축을 연-월 카테고리로 명확하게 표시
+    fig5.update_layout(xaxis_type="category")
 
-    # 그래프 출력
     st.plotly_chart(fig5, use_container_width=True)
+
+    st.caption(
+        "💡 **이 그래프로 알 수 있는 것:** 월 단위 총 관객수를 비교하여 연중 어떤 달(여름 방학/추석/겨울 방학 등)이 극장가의 가장 큰 성수기인지 한눈에 파악할 수 있습니다."
+    )
+
+st.divider()
+
+# 구역 6: 캘린더 히트맵 (월 x 요일 관객수 집계)
+with st.container():
+    st.subheader("6. 월별/요일별 캘린더 관객수 히트맵")
+
+    # 1. daily_total 데이터프레임에 월, 요일 이름, 날짜(문자열) 컬럼 생성
+    daily_heatmap = daily_total.copy()
+    daily_heatmap["월"] = daily_heatmap["기준일자"].dt.strftime("%Y-%m")
+    
+    # 요일 이름을 월요일~일요일 순서로 정렬하기 위한 카테고리 설정
+    day_names = ["월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"]
+    daily_heatmap["요일"] = daily_heatmap["기준일자"].dt.day_name().map({
+        "Monday": "월요일", "Tuesday": "화요일", "Wednesday": "수요일",
+        "Thursday": "목요일", "Friday": "금요일", "Saturday": "토요일", "Sunday": "일요일"
+    })
+    
+    # yyyy-mm-dd 날짜 문자열 컬럼 생성 (마우스 호버용)
+    daily_heatmap["날짜문자열"] = daily_heatmap["기준일자"].dt.strftime("%Y-%m-%d")
+
+    # 2. 월 x 요일 기준 피벗 테이블 생성 (값: 해당일관객수)
+    heatmap_pivot = daily_heatmap.pivot_table(
+        index="요일", 
+        columns="월", 
+        values="해당일관객수", 
+        aggfunc="sum"
+    ).reindex(day_names)  # 요일 순서를 월~일로 정렬
+
+    # 3. 호버 시 보여줄 yyyy-mm-dd 날짜 목록 피벗 테이블 생성 (문자열 결합)
+    date_pivot = daily_heatmap.pivot_table(
+        index="요일", 
+        columns="월", 
+        values="날짜문자열", 
+        aggfunc=lambda x: ", ".join(x)
+    ).reindex(day_names)
+
+    # 4. Plotly 히트맵(go.Heatmap) 생성
+    fig6 = go.Figure(
+        data=go.Heatmap(
+            z=heatmap_pivot.values,
+            x=heatmap_pivot.columns,
+            y=heatmap_pivot.index,
+            customdata=date_pivot.values,
+            colorscale="YlOrRd",  # 색상이 진할수록 관객 수가 많은 색상표
+            hovertemplate=(
+                "<b>날짜:</b> %{customdata}<br>" +
+                "<b>월/요일:</b> %{x} (%{y})<br>" +
+                "<b>총 관객수:</b> %{z:,.0f}명<extra></extra>"
+            )
+        )
+    )
+
+    # 레이아웃 설정
+    fig6.update_layout(
+        title="월별/요일별 박스오피스 관객수 분포 (진할수록 관객 많음)",
+        xaxis_title="연-월",
+        yaxis_title="요일",
+        yaxis=dict(autorange="reverse")  # 월요일이 상단에 오도록 순서 반전
+    )
+
+    st.plotly_chart(fig6, use_container_width=True)
 
     # 그래프 설명 문구 자리
     st.caption(
-        "💡 **이 그래프로 알 수 있는 것:** 월 단위 총 관객수를 비교하여 연중 어떤 달(여름 방학/추석/겨울 방학 등)이 극장가의 가장 큰 성수기인지 한눈에 파악할 수 있습니다."
+        "💡 **이 그래프로 알 수 있는 것:** 각 월별로 특정 요일(예: 주말/공휴일)에 관객이 얼마나 집중되는지 패턴을 한눈에 확인할 수 있으며, 마우스를 올려 해당 날짜(yyyy-mm-dd)와 상세 관객 수를 직접 확인할 수 있습니다."
     )
