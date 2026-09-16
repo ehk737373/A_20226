@@ -225,27 +225,43 @@ st.write("\n\n")
 # --- 여덟 번째 그래프 구역 ---
 st.header("8. 영화들의 총 관람객 수")
 
-# 1. 관객수 기준 완벽한 오름차순 정렬 (아래: 관객수 적음 → 위: 관객수 많음)
+# 1. 관객수 기준 오름차순 정렬 (아래에서 위로 오름차순 고정)
 df_all_sorted = df.sort_values(by='total_audi', ascending=True).reset_index(drop=True)
 
-# 2. 긴 영화 제목 줄임 처리
-def shorten_title(title):
-    title_str = str(title)
-    if len(title_str) > 12:
-        return title_str[:10] + "..."
-    return title_str
+max_audi = df_all_sorted['total_audi'].max()
+min_audi = df_all_sorted['total_audi'].min()
 
-labels_short = [shorten_title(title) for title in df_all_sorted['movieNm']]
+# 2. 긴 제목 줄임 및 관객수 비율 기반 라벨 서식 생성
+labels_formatted = []
+for idx, row in df_all_sorted.iterrows():
+    title = str(row['movieNm'])
+    audi = row['total_audi']
+    
+    # 긴 제목 절반 수준 축소 (12자 초과 시 요약)
+    if len(title) > 12:
+        display_title = title[:10] + "..."
+    else:
+        display_title = title
+        
+    # 관객수 비율에 맞춘 폰트 크기 계산 (11px ~ 26px)
+    ratio = (audi - min_audi) / (max_audi - min_audi) if max_audi != min_audi else 0.5
+    font_size = int(11 + ratio * 15)
+    
+    # 상위 흥행작 굵게 처리
+    if ratio >= 0.75:
+        labels_formatted.append(f"<span style='font-size:{font_size}px; color:#000000;'><b>{display_title}</b></span>")
+    else:
+        labels_formatted.append(f"<span style='font-size:{font_size}px; color:#000000;'>{display_title}</span>")
 
-# 3. go.Bar 기반 그래프 생성 (관객수 많음: 진한 검은색, 적음: 연한 검은색/회색)
+# 3. 막대 그래프 생성 (하단 막대도 선명히 보이는 검은색 그라데이션)
 fig8 = go.Figure(
     go.Bar(
         x=df_all_sorted['total_audi'],
-        y=list(range(len(df_all_sorted))), # 숫자 인덱스로 위치 고정 (순서 뒤바뀜 완전 방지)
+        y=list(range(len(df_all_sorted))),
         orientation='h',
         marker=dict(
             color=df_all_sorted['total_audi'],
-            colorscale=[[0, 'rgb(220,220,220)'], [1, 'rgb(0,0,0)']], # 연한 회색 ~ 검은색
+            colorscale=[[0, 'rgb(160,160,160)'], [1, 'rgb(0,0,0)']], # 적은 관객수 막대도 선명한 회색 처리
             showscale=False
         ),
         customdata=df_all_sorted['movieNm'],
@@ -253,28 +269,27 @@ fig8 = go.Figure(
     )
 )
 
-# 4. 레이아웃 설정: 겹침 방지를 위한 Y축 명확한 tick/ticktext 매핑 및 충분한 높이 확보
+# 4. 레이아웃: 충분한 Y축 높이(4000px)와 좌측 여백(280px)으로 겹침/짤림 방지
 fig8.update_layout(
     title="영화들의 총 관람객 수",
-    height=3200, # 겹침을 방지하기 위한 충분한 캔버스 높이
+    height=4000,
     xaxis=dict(
         title="총 관객수(명)",
-        type="log" # 관객수 차이를 효과적으로 보여주는 로그 스케일
+        type="log"
     ),
     yaxis=dict(
         tickmode='array',
         tickvals=list(range(len(df_all_sorted))),
-        ticktext=labels_short,
-        tickfont=dict(size=14, color='#000000'), # 깔끔하게 읽히는 표준 폰트 크기
+        ticktext=labels_formatted,
         automargin=True
     ),
-    margin=dict(l=250, r=20, t=50, b=40)
+    margin=dict(l=280, r=20, t=50, b=40)
 )
 
-# 5. 500px 높이의 스크롤 박스 내 배치
+# 5. 500px 고정 스크롤 박스 내 배치
 with st.container(height=500):
     st.plotly_chart(fig8, use_container_width=True)
 
 st.markdown("---")
 st.subheader("이 그래프로 알 수 있는 것")
-st.write("관객 수 오름차순으로 영화가 뒤바뀜 없이 정확히 정렬되어 있으며, 라벨이 겹치거나 삐져나가지 않고 검은색 모노톤 그라데이션으로 깔끔하게 표시됩니다.")
+st.write("관객수가 적은 아래쪽 막대도 선명하게 잘 나타나며, 관객수가 많은 상위 흥행작은 큰 글씨와 볼드체로 강조되면서도 겹침 없이 순서대로 정렬됩니다.")
