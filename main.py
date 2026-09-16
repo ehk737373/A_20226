@@ -226,30 +226,38 @@ st.write("\n\n")
 # --- 여덟 번째 그래프 구역 ---
 st.header("8. 영화들의 총 관람객 수")
 
-# 선 그래프 생성 (가로축: movieNm, 세로축: total_audi)
-fig8 = px.line(
-    df,
-    x='movieNm',
-    y='total_audi',
+# 216개 전체 영화를 관객수 기준 오름차순 정렬 (차트 상단에 관객수가 가장 많은 영화가 오도록 함)
+df_all_sorted = df.sort_values(by='total_audi', ascending=True)
+
+# 가로 막대 그래프 생성 (Y축: movieNm, X축: total_audi)
+fig8 = px.bar(
+    df_all_sorted,
+    x='total_audi',
+    y='movieNm',
+    orientation='h',
     title="영화들의 총 관람객 수",
-    markers=True,  # 각 영화 지점에 점 표시
     labels={
         'movieNm': '영화명',
         'total_audi': '총 관객수(명)'
-    }
+    },
+    color='total_audi',
+    color_continuous_scale='Blues'
 )
 
+# 마우스오버 시 영화명과 관람객 수 표시
 fig8.update_traces(
-    hovertemplate="<b>영화명</b>: %{x}<br><b>관람객 수</b>: %{y:,}명<extra></extra>"
+    hovertemplate="<b>영화명</b>: %{y}<br><b>관람객 수</b>: %{x:,}명<extra></extra>"
 )
 
-# 가로축 라벨이 잘 보이도록 X축 레이아웃 조정
+# 216개 영화명이 겹치지 않도록 세로 높이 지정 (height=3500)
 fig8.update_layout(
-    xaxis_tickangle=-45
+    height=3500,
+    coloraxis_showscale=False,
+    yaxis=dict(dtick=1)
 )
 
 st.plotly_chart(fig8, use_container_width=True)
 
 st.markdown("---")
 st.subheader("이 그래프로 알 수 있는 것")
-st.write("각 영화별 관람객 수의 개별 추이 및 특정 상위 흥행작과 하위작 간의 격차를 실선 흐름을 통해 확인할 수 있습니다.")
+st.write("216편 전체 영화의 총 관람객 수를 글자 겹침 없이 명확하게 파악할 수 있으며, 상위 흥행작부터 하위작까지의 관객 수 격차를 직관적으로 비교할 수 있습니다.")
