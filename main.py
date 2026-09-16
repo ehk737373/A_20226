@@ -231,48 +231,57 @@ df_all_sorted = df.sort_values(by='total_audi', ascending=True).reset_index(drop
 max_audi = df_all_sorted['total_audi'].max()
 min_audi = df_all_sorted['total_audi'].min()
 
-# 2. 영화 제목 축소 및 관객수 비율 기반 라벨/막대 크기 생성
+# 2. 제목 축소, 관객수 비례 글자 크기 생성
 labels_formatted = []
 for idx, row in df_all_sorted.iterrows():
     title = str(row['movieNm'])
     audi = row['total_audi']
     
-    # 긴 제목 절반 수준 축소
     if len(title) > 12:
         display_title = title[:10] + "..."
     else:
         display_title = title
         
-    # 관객수 비율 계산
     ratio = (audi - min_audi) / (max_audi - min_audi) if max_audi != min_audi else 0.5
-    font_size = int(12 + ratio * 20)  # 관객수 따라 12px ~ 32px
+    font_size = int(12 + ratio * 20)
     
-    # 상위 흥행작 굵게 처리
     if ratio >= 0.75:
         labels_formatted.append(f"<span style='font-size:{font_size}px; color:#000000;'><b>{display_title}</b></span>")
     else:
         labels_formatted.append(f"<span style='font-size:{font_size}px; color:#000000;'>{display_title}</span>")
 
-# 3. 막대 그래프 생성
-fig8 = go.Figure(
-    go.Bar(
-        x=df_all_sorted['total_audi'],
-        y=list(range(len(df_all_sorted))),
-        orientation='h',
-        marker=dict(
-            color=df_all_sorted['total_audi'],
-            colorscale=[[0, 'rgb(160,160,160)'], [1, 'rgb(0,0,0)']],
-            showscale=False
-        ),
-        customdata=df_all_sorted['movieNm'],
-        hovertemplate="<b>영화명</b>: %{customdata}<br><b>관람객 수</b>: %{x:,}명<extra></extra>"
-    )
-)
+fig8 = go.Figure()
 
-# 4. 레이아웃: 높이를 6500px로 대폭 늘려 제목 겹침 완벽 방지
+# 3. 각 영화마다 선(Line) 개별 생성으로 세로 두께 차등화 & 부드러운 그라데이션 구현
+for idx, row in df_all_sorted.iterrows():
+    audi = row['total_audi']
+    movie_name = row['movieNm']
+    
+    # 순위 기반(idx) 부드러운 흑백 그라데이션 색상 계산 (맨 아래도 잘 보이도록 160부터 0까지)
+    color_val = int(160 - (idx / (len(df_all_sorted) - 1)) * 160)
+    color_str = f'rgb({color_val},{color_val},{color_val})'
+    
+    # 관객수에 비례한 막대 세로 두께 (6px ~ 36px)
+    ratio = (audi - min_audi) / (max_audi - min_audi) if max_audi != min_audi else 0.5
+    line_width = int(6 + ratio * 30)
+    
+    fig8.add_trace(
+        go.Scatter(
+            x=[0, audi],
+            y=[idx, idx],
+            mode='lines',
+            line=dict(color=color_str, width=line_width),
+            name=movie_name,
+            customdata=[movie_name, movie_name],
+            hovertemplate=f"<b>영화명</b>: {movie_name}<br><b>관람객 수</b>: {audi:,}명<extra></extra>",
+            showlegend=False
+        )
+    )
+
+# 4. 레이아웃: 여유 있는 Y축 높이(6500px) 및 X축 로그 스케일
 fig8.update_layout(
     title="영화들의 총 관람객 수",
-    height=6500,  # 영화 간 간격을 아주 넉넉히 주어 글씨 겹침 해결
+    height=6500,
     xaxis=dict(
         title="총 관객수(명)",
         type="log"
@@ -286,10 +295,10 @@ fig8.update_layout(
     margin=dict(l=300, r=20, t=50, b=40)
 )
 
-# 5. 500px 고정 스크롤 박스 안에서 제공
+# 5. 500px 고정 스크롤 박스 내 배치
 with st.container(height=500):
     st.plotly_chart(fig8, use_container_width=True)
 
 st.markdown("---")
 st.subheader("이 그래프로 알 수 있는 것")
-st.write("각 영화 항목 간의 간격을 대폭 확보하여 대형 라벨 텍스트가 서로 겹치지 않으며, 흥행 관객수에 맞춰 글자 및 막대 시각화 효과가 차등 적용됩니다.")
+st.write("관객 수에 비례하여 막대 두께가 점진적으로 두꺼워지며, 하단부터 상단까지 층층이 끊기지 않는 매끄러운 모노톤 그라데이션으로 직관적인 비교가 가능합니다.")
