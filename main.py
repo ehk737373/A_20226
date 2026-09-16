@@ -140,8 +140,7 @@ st.write("\n\n")
 # --- 다섯 번째 그래프 구역 ---
 st.header("5. 주요 장르별 총 관객수 박스플롯")
 
-genre_counts = df['genre'].value_counts()
-top_genres = genre_counts[genre_counts >= 10].index
+top_genres = df['genre'].value_counts()[lambda x: x >= 10].index
 df_top_genres = df[df['genre'].isin(top_genres)]
 
 fig5 = px.box(
@@ -199,3 +198,26 @@ st.plotly_chart(fig6, use_container_width=True)
 st.markdown("---")
 st.subheader("이 그래프로 알 수 있는 것")
 st.write("초기 스크린 확보와 첫 주 흥행 실적이 최종 총 관객수와 밀접한 관계가 있음을 보여주며, 버블 크기를 통해 초기 흥행 폭발력을 직관적으로 파악할 수 있습니다.")
+
+st.write("\n\n")
+
+# --- 일곱 번째 그래프 구역 ---
+st.header("7. 제작 국가 및 장르별 영화 편수 선버스트")
+
+# 국가 -> 장르 계층구조 선버스트 그래프 생성
+fig7 = px.sunburst(
+    df,
+    path=['nation', 'genre'],
+    title="제작 국가별 장르 구성 분포 (선버스트)",
+    color='nation'
+)
+
+fig7.update_traces(
+    hovertemplate="<b>%{label}</b><br>영화 편수: %{value}편<br>비율: %{percentRoot:.1%}<extra></extra>"
+)
+
+st.plotly_chart(fig7, use_container_width=True)
+
+st.markdown("---")
+st.subheader("이 그래프로 알 수 있는 것")
+st.write("각 제작 국가별 영화 편수의 비중과 국가별로 주력을 이루는 영화 장르의 세부 구성을 계층적으로 파악할 수 있습니다.")
