@@ -224,7 +224,7 @@ st.write("\n\n")
 # --- 여덟 번째 그래프 구역 ---
 st.header("8. 영화들의 총 관람객 수")
 
-# 1. 관객수 기준 오름차순 정확히 정렬 (아래에서 위로 관객수가 늘어남)
+# 1. 관객수 기준 오름차순 정확히 정렬
 df_all_sorted = df.sort_values(by='total_audi', ascending=True).reset_index(drop=True)
 
 # 2. 제목 축소 및 관객수에 따른 검은색 폰트 크기(12px ~ 40px) 및 볼드체 동적 서식 생성
@@ -241,7 +241,7 @@ def format_movie_label(row):
     else:
         display_title = title
         
-    # 관객수 비율에 따라 폰트 크기 계산 (최소 12px ~ 최대 40px 유지)
+    # 관객수 비율에 따라 폰트 크기 계산 (최소 12px ~ 최대 40px)
     if max_audi != min_audi:
         ratio = (audi - min_audi) / (max_audi - min_audi)
     else:
@@ -268,7 +268,7 @@ fig8 = px.bar(
         'total_audi': '총 관객수(명)'
     },
     hover_data={'movieNm': True, 'formatted_label': False},
-    log_x=True,  # 적은 관객수의 막대도 선명하게 표시
+    log_x=True,
     color='total_audi',
     color_continuous_scale='Viridis'
 )
@@ -277,17 +277,18 @@ fig8.update_traces(
     hovertemplate="<b>영화명</b>: %{customdata[0]}<br><b>관람객 수</b>: %{x:,}명<extra></extra>"
 )
 
-# 4. Y축 정렬 순서 고정 및 큰 글씨가 삐져나가지 않도록 좌측 여백(margin_l) 대폭 확장
+# 4. Y축 정렬 순서를 array 방식으로 안전하게 지정하여 오류 방지
 fig8.update_layout(
-    height=4500,  # 40px 글자와 상하 막대가 겹치지 않도록 전체 캔버스 높이 충분히 확보
+    height=4500,
     coloraxis_showscale=False,
     yaxis=dict(
         dtick=1,
-        categoryorder='total-ascending',  # 관객수 오름차순 순서 완벽 고정
-        automargin=True,  # 여백 자동 확장
-        tickfont=dict(color='#000000')  # 축 텍스트 검은색 설정
+        categoryorder='array',  # 'total-ascending' 대신 'array'를 사용해 오류 해결
+        categoryarray=df_all_sorted['formatted_label'].tolist(),  # 데이터프레임 순서 그대로 고정
+        automargin=True,
+        tickfont=dict(color='#000000')
     ),
-    margin=dict(l=320, r=20, t=50, b=20)  # 40px 텍스트 짤림 방지용 왼쪽 여백 320px 부여
+    margin=dict(l=320, r=20, t=50, b=20)
 )
 
 # 5. 500px 높이의 스크롤 박스 내 배치
