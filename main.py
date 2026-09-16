@@ -232,11 +232,11 @@ max_audi = df_all_sorted['total_audi'].max()
 min_audi = df_all_sorted['total_audi'].min()
 total_count = len(df_all_sorted)
 
-# 2. 막대 간격 배율 설정 (각 막대 위치를 2.5배씩 벌려 겹침 완전 방지)
+# 2. 막대 간격 배율 설정 (막대 겹침 방지)
 STEP = 2.5
 y_positions = [i * STEP for i in range(total_count)]
 
-# 3. 제목 포맷팅
+# 3. 제목 포맷팅 (글씨 최소 크기 16px로 상향: 16px ~ 28px 범위)
 labels_formatted = []
 for idx, row in df_all_sorted.iterrows():
     title = str(row['movieNm'])
@@ -248,7 +248,7 @@ for idx, row in df_all_sorted.iterrows():
         display_title = title
         
     ratio = (audi - min_audi) / (max_audi - min_audi) if max_audi != min_audi else 0.5
-    font_size = int(12 + ratio * 16)
+    font_size = int(16 + ratio * 12)  # 최소 16px부터 시작
     
     if ratio >= 0.75:
         labels_formatted.append(f"<span style='font-size:{font_size}px; color:#000000;'><b>{display_title}</b></span>")
@@ -257,7 +257,7 @@ for idx, row in df_all_sorted.iterrows():
 
 fig8 = go.Figure()
 
-# 4. 막대 생성 (두꺼운 두께 유지 + 독립된 Y 좌표 부여)
+# 4. 막대 생성 (두께 및 위치 고정)
 for idx, row in df_all_sorted.iterrows():
     audi = row['total_audi']
     movie_name = row['movieNm']
@@ -267,7 +267,7 @@ for idx, row in df_all_sorted.iterrows():
     color_str = f'rgb({color_val},{color_val},{color_val})'
     
     ratio = (audi - min_audi) / (max_audi - min_audi) if max_audi != min_audi else 0.5
-    line_width = int(22 + ratio * 24)  # 최소 22px ~ 최대 46px
+    line_width = int(22 + ratio * 24)
     
     fig8.add_trace(
         go.Scatter(
@@ -282,7 +282,7 @@ for idx, row in df_all_sorted.iterrows():
         )
     )
 
-# 5. 레이아웃: 타이트한 상하 범위를 통해 여백 없이 딱 맞춰 표시
+# 5. 레이아웃
 total_height = int(total_count * STEP * 24)
 
 fig8.update_layout(
@@ -296,7 +296,7 @@ fig8.update_layout(
         tickmode='array',
         tickvals=y_positions,
         ticktext=labels_formatted,
-        range=[-STEP, y_positions[-1] + STEP],  # 상하 여백 공간 타이트하게 밀착
+        range=[-STEP, y_positions[-1] + STEP],
         automargin=True
     ),
     margin=dict(l=300, r=20, t=20, b=20)
@@ -308,4 +308,4 @@ with st.container(height=500):
 
 st.markdown("---")
 st.subheader("이 그래프로 알 수 있는 것")
-st.write("각 막대의 Y축 좌표 간격을 여유 있게 벌려 두꺼운 막대끼리 서로 겹치는 현상을 해결했습니다. 상하 끝의 빈 공간도 최소화하여 깔끔하게 정돈되었습니다.")
+st.write("하단부 영화 제목들의 최소 폰트 크기를 16px로 키워 가독성을 크게 향상시켰습니다.")
