@@ -224,7 +224,7 @@ st.write("\n\n")
 # --- 여덟 번째 그래프 구역 ---
 st.header("8. 영화들의 총 관람객 수")
 
-# 1. 관객수 기준 오름차순 정렬
+# 1. 관객수 기준 오름차순 정확히 정렬 (아래에서 위로 관객수가 늘어남)
 df_all_sorted = df.sort_values(by='total_audi', ascending=True).reset_index(drop=True)
 
 # 2. 제목 축소 및 관객수에 따른 검은색 폰트 크기(12px ~ 40px) 및 볼드체 동적 서식 생성
@@ -241,14 +241,14 @@ def format_movie_label(row):
     else:
         display_title = title
         
-    # 관객수 비율에 따라 폰트 크기 계산 (최소 12px ~ 최대 40px)
+    # 관객수 비율에 따라 폰트 크기 계산 (최소 12px ~ 최대 40px 유지)
     if max_audi != min_audi:
         ratio = (audi - min_audi) / (max_audi - min_audi)
     else:
         ratio = 0.5
     font_size = int(12 + ratio * 28)
     
-    # 상위 20% 흥행 영화는 볼드체(Bold) 적용, 라벨 폰트 색상은 검은색(#000000)으로 고정
+    # 상위 흥행작(상위 20%)은 볼드체(Bold) 적용, 라벨 폰트 색상은 검은색(#000000)으로 고정
     if ratio >= 0.8:
         return f"<span style='font-size:{font_size}px; color:#000000;'><b>{display_title}</b></span>"
     else:
@@ -256,7 +256,7 @@ def format_movie_label(row):
 
 df_all_sorted['formatted_label'] = df_all_sorted.apply(format_movie_label, axis=1)
 
-# 3. 관객수 크기에 따른 진하기 그라데이션 막대 그래프 생성 (Blues 스케일)
+# 3. 관객수 크기에 따른 진하기 그라데이션 막대 그래프 생성
 fig8 = px.bar(
     df_all_sorted,
     x='total_audi',
@@ -269,23 +269,25 @@ fig8 = px.bar(
     },
     hover_data={'movieNm': True, 'formatted_label': False},
     log_x=True,  # 적은 관객수의 막대도 선명하게 표시
-    color='total_audi',  # 관객수에 따라 색상 그라데이션 적용
-    color_continuous_scale='Viridis'  # 관객수가 많을수록 진한 색상
+    color='total_audi',
+    color_continuous_scale='Viridis'
 )
 
 fig8.update_traces(
     hovertemplate="<b>영화명</b>: %{customdata[0]}<br><b>관람객 수</b>: %{x:,}명<extra></extra>"
 )
 
-# 4. Y축 폰트 색상을 검은색으로 선명하게 처리 및 3500px 내부 높이 설정
+# 4. Y축 정렬 순서 고정 및 큰 글씨가 삐져나가지 않도록 좌측 여백(margin_l) 대폭 확장
 fig8.update_layout(
-    height=3500,
+    height=4500,  # 40px 글자와 상하 막대가 겹치지 않도록 전체 캔버스 높이 충분히 확보
     coloraxis_showscale=False,
     yaxis=dict(
         dtick=1,
+        categoryorder='total-ascending',  # 관객수 오름차순 순서 완벽 고정
+        automargin=True,  # 여백 자동 확장
         tickfont=dict(color='#000000')  # 축 텍스트 검은색 설정
     ),
-    margin=dict(l=10, r=10, t=40, b=10)
+    margin=dict(l=320, r=20, t=50, b=20)  # 40px 텍스트 짤림 방지용 왼쪽 여백 320px 부여
 )
 
 # 5. 500px 높이의 스크롤 박스 내 배치
@@ -294,4 +296,4 @@ with st.container(height=500):
 
 st.markdown("---")
 st.subheader("이 그래프로 알 수 있는 것")
-st.write("관객 수가 많은 영화일수록 막대 색상이 진해지고 글자 크기가 최대 40px까지 굵게 커지며, 검은색 텍스트와 요약된 영화명을 통해 가독성을 극대화하였습니다.")
+st.write("관객 수 오름차순으로 영화가 뒤바뀜 없이 정확히 정렬되어 있으며, 대형 폰트(최대 40px)가 밖으로 삐져나가지 않고 깔끔하게 그래프와 정렬되어 한눈에 파악할 수 있습니다.")
