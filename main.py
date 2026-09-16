@@ -227,7 +227,7 @@ st.header("8. 영화들의 총 관람객 수")
 # 1. 관객수 기준 오름차순 정렬
 df_all_sorted = df.sort_values(by='total_audi', ascending=True).reset_index(drop=True)
 
-# 2. 제목 줄임 처리 및 관객 수에 따른 폰트 크기/볼드체 동적 라벨 생성
+# 2. 제목 축소 및 관객수에 따른 검은색 폰트 크기(12px ~ 40px) 및 볼드체 동적 서식 생성
 max_audi = df_all_sorted['total_audi'].max()
 min_audi = df_all_sorted['total_audi'].min()
 
@@ -235,58 +235,63 @@ def format_movie_label(row):
     title = str(row['movieNm'])
     audi = row['total_audi']
     
-    # 제목이 너무 길 경우(12자 초과) 절반 수준으로 줄임
+    # 제목이 길면 절반 수준(12자 초과)으로 축소
     if len(title) > 12:
         display_title = title[:10] + "..."
     else:
         display_title = title
         
-    # 관객수 비율에 따라 폰트 크기(10px ~ 15px) 계산
+    # 관객수 비율에 따라 폰트 크기 계산 (최소 12px ~ 최대 40px)
     if max_audi != min_audi:
         ratio = (audi - min_audi) / (max_audi - min_audi)
     else:
         ratio = 0.5
-    font_size = int(10 + ratio * 5)
+    font_size = int(12 + ratio * 28)
     
-    # 관객수 상위 25% 영화는 볼드체(bold) 적용, 나머지는 일반체
-    if ratio >= 0.75:
-        return f"<span style='font-size:{font_size}px;'><b>{display_title}</b></span>"
+    # 상위 20% 흥행 영화는 볼드체(Bold) 적용, 라벨 폰트 색상은 검은색(#000000)으로 고정
+    if ratio >= 0.8:
+        return f"<span style='font-size:{font_size}px; color:#000000;'><b>{display_title}</b></span>"
     else:
-        return f"<span style='font-size:{font_size}px;'>{display_title}</span>"
+        return f"<span style='font-size:{font_size}px; color:#000000;'>{display_title}</span>"
 
 df_all_sorted['formatted_label'] = df_all_sorted.apply(format_movie_label, axis=1)
 
-# 3. 로그 스케일 및 선명한 검은색 계열 막대 그래프 생성
+# 3. 관객수 크기에 따른 진하기 그라데이션 막대 그래프 생성 (Blues 스케일)
 fig8 = px.bar(
     df_all_sorted,
     x='total_audi',
     y='formatted_label',
     orientation='h',
-    title="영화들의 총 관람객 수 (관객수별 폰트/볼드 차등 및 뚜렷한 검은색 막대)",
+    title="영화들의 총 관람객 수",
     labels={
         'formatted_label': '영화명',
         'total_audi': '총 관객수(명)'
     },
     hover_data={'movieNm': True, 'formatted_label': False},
-    log_x=True,  # 적은 관객 수의 막대도 뚜렷하게 보이도록 설정
-    color_discrete_sequence=['#1f1f1f']  # 불투명하게 잘 보이도록 진한 검은색 적용
+    log_x=True,  # 적은 관객수의 막대도 선명하게 표시
+    color='total_audi',  # 관객수에 따라 색상 그라데이션 적용
+    color_continuous_scale='Viridis'  # 관객수가 많을수록 진한 색상
 )
 
 fig8.update_traces(
     hovertemplate="<b>영화명</b>: %{customdata[0]}<br><b>관람객 수</b>: %{x:,}명<extra></extra>"
 )
 
-# 4. Y축 라벨 겹침 방지 및 레이아웃 설정
+# 4. Y축 폰트 색상을 검은색으로 선명하게 처리 및 3500px 내부 높이 설정
 fig8.update_layout(
     height=3500,
-    yaxis=dict(dtick=1),
+    coloraxis_showscale=False,
+    yaxis=dict(
+        dtick=1,
+        tickfont=dict(color='#000000')  # 축 텍스트 검은색 설정
+    ),
     margin=dict(l=10, r=10, t=40, b=10)
 )
 
-# 5. 500px 고정 스크롤 박스 내 배치
+# 5. 500px 높이의 스크롤 박스 내 배치
 with st.container(height=500):
     st.plotly_chart(fig8, use_container_width=True)
 
 st.markdown("---")
 st.subheader("이 그래프로 알 수 있는 것")
-st.write("관객 수가 많은 흥행작일수록 글자가 크고 굵게 강조되며, 긴 영화 제목은 깔끔하게 요약되어 겹침 없이 명확하게 파악할 수 있습니다.")
+st.write("관객 수가 많은 영화일수록 막대 색상이 진해지고 글자 크기가 최대 40px까지 굵게 커지며, 검은색 텍스트와 요약된 영화명을 통해 가독성을 극대화하였습니다.")
