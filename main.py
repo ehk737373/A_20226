@@ -225,27 +225,27 @@ st.write("\n\n")
 # --- 여덟 번째 그래프 구역 ---
 st.header("8. 영화들의 총 관람객 수")
 
-# 1. 관객수 기준 오름차순 정렬 (아래에서 위로 오름차순 고정)
+# 1. 관객수 기준 오름차순 정렬
 df_all_sorted = df.sort_values(by='total_audi', ascending=True).reset_index(drop=True)
 
 max_audi = df_all_sorted['total_audi'].max()
 min_audi = df_all_sorted['total_audi'].min()
 
-# 2. 긴 제목 줄임 및 관객수 비율 기반 라벨 서식 생성
+# 2. 영화 제목 축소 및 관객수 비율 기반 라벨/막대 크기 생성
 labels_formatted = []
 for idx, row in df_all_sorted.iterrows():
     title = str(row['movieNm'])
     audi = row['total_audi']
     
-    # 긴 제목 절반 수준 축소 (12자 초과 시 요약)
+    # 긴 제목 절반 수준 축소
     if len(title) > 12:
         display_title = title[:10] + "..."
     else:
         display_title = title
         
-    # 관객수 비율에 맞춘 폰트 크기 계산 (11px ~ 26px)
+    # 관객수 비율 계산
     ratio = (audi - min_audi) / (max_audi - min_audi) if max_audi != min_audi else 0.5
-    font_size = int(11 + ratio * 15)
+    font_size = int(12 + ratio * 20)  # 관객수 따라 12px ~ 32px
     
     # 상위 흥행작 굵게 처리
     if ratio >= 0.75:
@@ -253,7 +253,7 @@ for idx, row in df_all_sorted.iterrows():
     else:
         labels_formatted.append(f"<span style='font-size:{font_size}px; color:#000000;'>{display_title}</span>")
 
-# 3. 막대 그래프 생성 (하단 막대도 선명히 보이는 검은색 그라데이션)
+# 3. 막대 그래프 생성
 fig8 = go.Figure(
     go.Bar(
         x=df_all_sorted['total_audi'],
@@ -261,7 +261,7 @@ fig8 = go.Figure(
         orientation='h',
         marker=dict(
             color=df_all_sorted['total_audi'],
-            colorscale=[[0, 'rgb(160,160,160)'], [1, 'rgb(0,0,0)']], # 적은 관객수 막대도 선명한 회색 처리
+            colorscale=[[0, 'rgb(160,160,160)'], [1, 'rgb(0,0,0)']],
             showscale=False
         ),
         customdata=df_all_sorted['movieNm'],
@@ -269,10 +269,10 @@ fig8 = go.Figure(
     )
 )
 
-# 4. 레이아웃: 충분한 Y축 높이(4000px)와 좌측 여백(280px)으로 겹침/짤림 방지
+# 4. 레이아웃: 높이를 6500px로 대폭 늘려 제목 겹침 완벽 방지
 fig8.update_layout(
     title="영화들의 총 관람객 수",
-    height=4000,
+    height=6500,  # 영화 간 간격을 아주 넉넉히 주어 글씨 겹침 해결
     xaxis=dict(
         title="총 관객수(명)",
         type="log"
@@ -283,13 +283,13 @@ fig8.update_layout(
         ticktext=labels_formatted,
         automargin=True
     ),
-    margin=dict(l=280, r=20, t=50, b=40)
+    margin=dict(l=300, r=20, t=50, b=40)
 )
 
-# 5. 500px 고정 스크롤 박스 내 배치
+# 5. 500px 고정 스크롤 박스 안에서 제공
 with st.container(height=500):
     st.plotly_chart(fig8, use_container_width=True)
 
 st.markdown("---")
 st.subheader("이 그래프로 알 수 있는 것")
-st.write("관객수가 적은 아래쪽 막대도 선명하게 잘 나타나며, 관객수가 많은 상위 흥행작은 큰 글씨와 볼드체로 강조되면서도 겹침 없이 순서대로 정렬됩니다.")
+st.write("각 영화 항목 간의 간격을 대폭 확보하여 대형 라벨 텍스트가 서로 겹치지 않으며, 흥행 관객수에 맞춰 글자 및 막대 시각화 효과가 차등 적용됩니다.")
