@@ -243,7 +243,7 @@ for idx, row in df_all_sorted.iterrows():
         display_title = title
         
     ratio = (audi - min_audi) / (max_audi - min_audi) if max_audi != min_audi else 0.5
-    font_size = int(12 + ratio * 18)
+    font_size = int(12 + ratio * 16)
     
     if ratio >= 0.75:
         labels_formatted.append(f"<span style='font-size:{font_size}px; color:#000000;'><b>{display_title}</b></span>")
@@ -252,18 +252,18 @@ for idx, row in df_all_sorted.iterrows():
 
 fig8 = go.Figure()
 
-# 3. 각 영화마다 선(Line) 개별 생성 (막대 간격 넉넉화 및 최소 두께 14px 설정)
+# 3. 선 두께 보완: 하단 막대 기본 두께를 22px로 상향 (22px ~ 46px)
+total_count = len(df_all_sorted)
 for idx, row in df_all_sorted.iterrows():
     audi = row['total_audi']
     movie_name = row['movieNm']
     
-    # 흑백 그라데이션
-    color_val = int(160 - (idx / (len(df_all_sorted) - 1)) * 160)
+    color_val = int(160 - (idx / (total_count - 1)) * 160)
     color_str = f'rgb({color_val},{color_val},{color_val})'
     
-    # 관객수 비율에 따른 두께 조정 (최소 두께를 14px로 지정하여 하단 막대가 가늘어지는 현상 방지)
+    # 하단 막대도 묵직하게 보이도록 최소 두께를 22px로 확대
     ratio = (audi - min_audi) / (max_audi - min_audi) if max_audi != min_audi else 0.5
-    line_width = int(14 + ratio * 24)  # 최소 14px ~ 최대 38px
+    line_width = int(22 + ratio * 24)
     
     fig8.add_trace(
         go.Scatter(
@@ -278,21 +278,22 @@ for idx, row in df_all_sorted.iterrows():
         )
     )
 
-# 4. 레이아웃: 막대와 제목 겹침 방지를 위해 높이를 10,000px로 대폭 확대
+# 4. 상하 여백 제거 및 적정 높이(6500px) 조절
 fig8.update_layout(
     title="영화들의 총 관람객 수",
-    height=10000,
+    height=6500,
     xaxis=dict(
         title="총 관객수(명)",
         type="log"
     ),
     yaxis=dict(
         tickmode='array',
-        tickvals=list(range(len(df_all_sorted))),
+        tickvals=list(range(total_count)),
         ticktext=labels_formatted,
+        range=[-0.5, total_count - 0.5],  # 상하 여백 빈 공간 완전 제거
         automargin=True
     ),
-    margin=dict(l=300, r=20, t=50, b=40)
+    margin=dict(l=300, r=20, t=30, b=20)   # 상/하 마진 최소화
 )
 
 # 5. 500px 고정 스크롤 박스 내 배치
@@ -301,4 +302,4 @@ with st.container(height=500):
 
 st.markdown("---")
 st.subheader("이 그래프로 알 수 있는 것")
-st.write("캔버스 높이를 10,000px로 확대하여 막대와 큰 라벨 제목들이 서로 겹치지 않고 여유롭게 분리됩니다. 또한 하단 막대도 최소 14px 이상의 두께를 유지하도록 보완했습니다.")
+st.write("위아래 불필요한 여백을 제거하고 Y축 범위를 타이트하게 조정했습니다. 하단 영역 막대 두께도 기본 22px부터 시작하도록 대폭 두꺼워졌습니다.")
