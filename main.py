@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 
 # 페이지 설정
 st.set_page_config(
@@ -224,71 +225,50 @@ st.write("\n\n")
 # --- 여덟 번째 그래프 구역 ---
 st.header("8. 영화들의 총 관람객 수")
 
-# 1. 관객수 기준 오름차순 정확히 정렬
+# 1. 관객수 기준 완벽한 오름차순 정렬 (아래: 관객수 적음 → 위: 관객수 많음)
 df_all_sorted = df.sort_values(by='total_audi', ascending=True).reset_index(drop=True)
 
-# 2. 제목 축소 및 관객수에 따른 검은색 폰트 크기(12px ~ 40px) 및 볼드체 동적 서식 생성
-max_audi = df_all_sorted['total_audi'].max()
-min_audi = df_all_sorted['total_audi'].min()
+# 2. 긴 영화 제목 줄임 처리
+def shorten_title(title):
+    title_str = str(title)
+    if len(title_str) > 12:
+        return title_str[:10] + "..."
+    return title_str
 
-def format_movie_label(row):
-    title = str(row['movieNm'])
-    audi = row['total_audi']
-    
-    # 제목이 길면 절반 수준(12자 초과)으로 축소
-    if len(title) > 12:
-        display_title = title[:10] + "..."
-    else:
-        display_title = title
-        
-    # 관객수 비율에 따라 폰트 크기 계산 (최소 12px ~ 최대 40px)
-    if max_audi != min_audi:
-        ratio = (audi - min_audi) / (max_audi - min_audi)
-    else:
-        ratio = 0.5
-    font_size = int(12 + ratio * 28)
-    
-    # 상위 흥행작(상위 20%)은 볼드체(Bold) 적용, 라벨 폰트 색상은 검은색(#000000)으로 고정
-    if ratio >= 0.8:
-        return f"<span style='font-size:{font_size}px; color:#000000;'><b>{display_title}</b></span>"
-    else:
-        return f"<span style='font-size:{font_size}px; color:#000000;'>{display_title}</span>"
+labels_short = [shorten_title(title) for title in df_all_sorted['movieNm']]
 
-df_all_sorted['formatted_label'] = df_all_sorted.apply(format_movie_label, axis=1)
-
-# 3. 관객수 크기에 따른 진하기 그라데이션 막대 그래프 생성
-fig8 = px.bar(
-    df_all_sorted,
-    x='total_audi',
-    y='formatted_label',
-    orientation='h',
-    title="영화들의 총 관람객 수",
-    labels={
-        'formatted_label': '영화명',
-        'total_audi': '총 관객수(명)'
-    },
-    hover_data={'movieNm': True, 'formatted_label': False},
-    log_x=True,
-    color='total_audi',
-    color_continuous_scale='Viridis'
+# 3. go.Bar 기반 그래프 생성 (관객수 많음: 진한 검은색, 적음: 연한 검은색/회색)
+fig8 = go.Figure(
+    go.Bar(
+        x=df_all_sorted['total_audi'],
+        y=list(range(len(df_all_sorted))), # 숫자 인덱스로 위치 고정 (순서 뒤바뀜 완전 방지)
+        orientation='h',
+        marker=dict(
+            color=df_all_sorted['total_audi'],
+            colorscale=[[0, 'rgb(220,220,220)'], [1, 'rgb(0,0,0)']], # 연한 회색 ~ 검은색
+            showscale=False
+        ),
+        customdata=df_all_sorted['movieNm'],
+        hovertemplate="<b>영화명</b>: %{customdata}<br><b>관람객 수</b>: %{x:,}명<extra></extra>"
+    )
 )
 
-fig8.update_traces(
-    hovertemplate="<b>영화명</b>: %{customdata[0]}<br><b>관람객 수</b>: %{x:,}명<extra></extra>"
-)
-
-# 4. Y축 정렬 순서를 array 방식으로 안전하게 지정하여 오류 방지
+# 4. 레이아웃 설정: 겹침 방지를 위한 Y축 명확한 tick/ticktext 매핑 및 충분한 높이 확보
 fig8.update_layout(
-    height=4500,
-    coloraxis_showscale=False,
-    yaxis=dict(
-        dtick=1,
-        categoryorder='array',  # 'total-ascending' 대신 'array'를 사용해 오류 해결
-        categoryarray=df_all_sorted['formatted_label'].tolist(),  # 데이터프레임 순서 그대로 고정
-        automargin=True,
-        tickfont=dict(color='#000000')
+    title="영화들의 총 관람객 수",
+    height=3200, # 겹침을 방지하기 위한 충분한 캔버스 높이
+    xaxis=dict(
+        title="총 관객수(명)",
+        type="log" # 관객수 차이를 효과적으로 보여주는 로그 스케일
     ),
-    margin=dict(l=320, r=20, t=50, b=20)
+    yaxis=dict(
+        tickmode='array',
+        tickvals=list(range(len(df_all_sorted))),
+        ticktext=labels_short,
+        tickfont=dict(size=14, color='#000000'), # 깔끔하게 읽히는 표준 폰트 크기
+        automargin=True
+    ),
+    margin=dict(l=250, r=20, t=50, b=40)
 )
 
 # 5. 500px 높이의 스크롤 박스 내 배치
@@ -297,4 +277,4 @@ with st.container(height=500):
 
 st.markdown("---")
 st.subheader("이 그래프로 알 수 있는 것")
-st.write("관객 수 오름차순으로 영화가 뒤바뀜 없이 정확히 정렬되어 있으며, 대형 폰트(최대 40px)가 밖으로 삐져나가지 않고 깔끔하게 그래프와 정렬되어 한눈에 파악할 수 있습니다.")
+st.write("관객 수 오름차순으로 영화가 뒤바뀜 없이 정확히 정렬되어 있으며, 라벨이 겹치거나 삐져나가지 않고 검은색 모노톤 그라데이션으로 깔끔하게 표시됩니다.")
