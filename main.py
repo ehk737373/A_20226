@@ -243,7 +243,7 @@ for idx, row in df_all_sorted.iterrows():
         display_title = title
         
     ratio = (audi - min_audi) / (max_audi - min_audi) if max_audi != min_audi else 0.5
-    font_size = int(12 + ratio * 20)
+    font_size = int(12 + ratio * 18)
     
     if ratio >= 0.75:
         labels_formatted.append(f"<span style='font-size:{font_size}px; color:#000000;'><b>{display_title}</b></span>")
@@ -252,18 +252,18 @@ for idx, row in df_all_sorted.iterrows():
 
 fig8 = go.Figure()
 
-# 3. 각 영화마다 선(Line) 개별 생성으로 세로 두께 차등화 & 부드러운 그라데이션 구현
+# 3. 각 영화마다 선(Line) 개별 생성 (막대 간격 넉넉화 및 최소 두께 14px 설정)
 for idx, row in df_all_sorted.iterrows():
     audi = row['total_audi']
     movie_name = row['movieNm']
     
-    # 순위 기반(idx) 부드러운 흑백 그라데이션 색상 계산 (맨 아래도 잘 보이도록 160부터 0까지)
+    # 흑백 그라데이션
     color_val = int(160 - (idx / (len(df_all_sorted) - 1)) * 160)
     color_str = f'rgb({color_val},{color_val},{color_val})'
     
-    # 관객수에 비례한 막대 세로 두께 (6px ~ 36px)
+    # 관객수 비율에 따른 두께 조정 (최소 두께를 14px로 지정하여 하단 막대가 가늘어지는 현상 방지)
     ratio = (audi - min_audi) / (max_audi - min_audi) if max_audi != min_audi else 0.5
-    line_width = int(6 + ratio * 30)
+    line_width = int(14 + ratio * 24)  # 최소 14px ~ 최대 38px
     
     fig8.add_trace(
         go.Scatter(
@@ -278,10 +278,10 @@ for idx, row in df_all_sorted.iterrows():
         )
     )
 
-# 4. 레이아웃: 여유 있는 Y축 높이(6500px) 및 X축 로그 스케일
+# 4. 레이아웃: 막대와 제목 겹침 방지를 위해 높이를 10,000px로 대폭 확대
 fig8.update_layout(
     title="영화들의 총 관람객 수",
-    height=6500,
+    height=10000,
     xaxis=dict(
         title="총 관객수(명)",
         type="log"
@@ -301,4 +301,4 @@ with st.container(height=500):
 
 st.markdown("---")
 st.subheader("이 그래프로 알 수 있는 것")
-st.write("관객 수에 비례하여 막대 두께가 점진적으로 두꺼워지며, 하단부터 상단까지 층층이 끊기지 않는 매끄러운 모노톤 그라데이션으로 직관적인 비교가 가능합니다.")
+st.write("캔버스 높이를 10,000px로 확대하여 막대와 큰 라벨 제목들이 서로 겹치지 않고 여유롭게 분리됩니다. 또한 하단 막대도 최소 14px 이상의 두께를 유지하도록 보완했습니다.")
