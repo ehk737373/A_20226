@@ -204,7 +204,6 @@ st.write("\n\n")
 # --- 일곱 번째 그래프 구역 ---
 st.header("7. 제작 국가 및 장르별 영화 편수 선버스트")
 
-# 국가 -> 장르 계층구조 선버스트 그래프 생성
 fig7 = px.sunburst(
     df,
     path=['nation', 'genre'],
@@ -221,3 +220,36 @@ st.plotly_chart(fig7, use_container_width=True)
 st.markdown("---")
 st.subheader("이 그래프로 알 수 있는 것")
 st.write("각 제작 국가별 영화 편수의 비중과 국가별로 주력을 이루는 영화 장르의 세부 구성을 계층적으로 파악할 수 있습니다.")
+
+st.write("\n\n")
+
+# --- 여덟 번째 그래프 구역 ---
+st.header("8. 영화들의 총 관람객 수")
+
+# 선 그래프 생성 (가로축: movieNm, 세로축: total_audi)
+fig8 = px.line(
+    df,
+    x='movieNm',
+    y='total_audi',
+    title="영화들의 총 관람객 수",
+    markers=True,  # 각 영화 지점에 점 표시
+    labels={
+        'movieNm': '영화명',
+        'total_audi': '총 관객수(명)'
+    }
+)
+
+fig8.update_traces(
+    hovertemplate="<b>영화명</b>: %{x}<br><b>관람객 수</b>: %{y:,}명<extra></extra>"
+)
+
+# 가로축 라벨이 잘 보이도록 X축 레이아웃 조정
+fig8.update_layout(
+    xaxis_tickangle=-45
+)
+
+st.plotly_chart(fig8, use_container_width=True)
+
+st.markdown("---")
+st.subheader("이 그래프로 알 수 있는 것")
+st.write("각 영화별 관람객 수의 개별 추이 및 특정 상위 흥행작과 하위작 간의 격차를 실선 흐름을 통해 확인할 수 있습니다.")
