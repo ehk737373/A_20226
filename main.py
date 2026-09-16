@@ -230,8 +230,13 @@ df_all_sorted = df.sort_values(by='total_audi', ascending=True).reset_index(drop
 
 max_audi = df_all_sorted['total_audi'].max()
 min_audi = df_all_sorted['total_audi'].min()
+total_count = len(df_all_sorted)
 
-# 2. 제목 축소, 관객수 비례 글자 크기 생성
+# 2. 막대 간격 배율 설정 (각 막대 위치를 2.5배씩 벌려 겹침 완전 방지)
+STEP = 2.5
+y_positions = [i * STEP for i in range(total_count)]
+
+# 3. 제목 포맷팅
 labels_formatted = []
 for idx, row in df_all_sorted.iterrows():
     title = str(row['movieNm'])
@@ -252,23 +257,22 @@ for idx, row in df_all_sorted.iterrows():
 
 fig8 = go.Figure()
 
-# 3. 선 두께 보완: 하단 막대 기본 두께를 22px로 상향 (22px ~ 46px)
-total_count = len(df_all_sorted)
+# 4. 막대 생성 (두꺼운 두께 유지 + 독립된 Y 좌표 부여)
 for idx, row in df_all_sorted.iterrows():
     audi = row['total_audi']
     movie_name = row['movieNm']
+    y_pos = y_positions[idx]
     
     color_val = int(160 - (idx / (total_count - 1)) * 160)
     color_str = f'rgb({color_val},{color_val},{color_val})'
     
-    # 하단 막대도 묵직하게 보이도록 최소 두께를 22px로 확대
     ratio = (audi - min_audi) / (max_audi - min_audi) if max_audi != min_audi else 0.5
-    line_width = int(22 + ratio * 24)
+    line_width = int(22 + ratio * 24)  # 최소 22px ~ 최대 46px
     
     fig8.add_trace(
         go.Scatter(
             x=[0, audi],
-            y=[idx, idx],
+            y=[y_pos, y_pos],
             mode='lines',
             line=dict(color=color_str, width=line_width),
             name=movie_name,
@@ -278,28 +282,30 @@ for idx, row in df_all_sorted.iterrows():
         )
     )
 
-# 4. 상하 여백 제거 및 적정 높이(6500px) 조절
+# 5. 레이아웃: 타이트한 상하 범위를 통해 여백 없이 딱 맞춰 표시
+total_height = int(total_count * STEP * 24)
+
 fig8.update_layout(
     title="영화들의 총 관람객 수",
-    height=6500,
+    height=total_height,
     xaxis=dict(
         title="총 관객수(명)",
         type="log"
     ),
     yaxis=dict(
         tickmode='array',
-        tickvals=list(range(total_count)),
+        tickvals=y_positions,
         ticktext=labels_formatted,
-        range=[-0.5, total_count - 0.5],  # 상하 여백 빈 공간 완전 제거
+        range=[-STEP, y_positions[-1] + STEP],  # 상하 여백 공간 타이트하게 밀착
         automargin=True
     ),
-    margin=dict(l=300, r=20, t=30, b=20)   # 상/하 마진 최소화
+    margin=dict(l=300, r=20, t=20, b=20)
 )
 
-# 5. 500px 고정 스크롤 박스 내 배치
+# 6. 500px 고정 스크롤 박스 내 배치
 with st.container(height=500):
     st.plotly_chart(fig8, use_container_width=True)
 
 st.markdown("---")
 st.subheader("이 그래프로 알 수 있는 것")
-st.write("위아래 불필요한 여백을 제거하고 Y축 범위를 타이트하게 조정했습니다. 하단 영역 막대 두께도 기본 22px부터 시작하도록 대폭 두꺼워졌습니다.")
+st.write("각 막대의 Y축 좌표 간격을 여유 있게 벌려 두꺼운 막대끼리 서로 겹치는 현상을 해결했습니다. 상하 끝의 빈 공간도 최소화하여 깔끔하게 정돈되었습니다.")
